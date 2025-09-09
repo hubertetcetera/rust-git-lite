@@ -3,35 +3,21 @@ use std::env;
 #[allow(unused_imports)]
 use std::fs;
 
-use std::str::FromStr;
-use strum::{Display, EnumString};
+use clap::Parser;
 
-#[derive(Default, Display, EnumString)]
-#[strum(serialize_all = "kebab-case")]
+#[derive(Debug, Parser)]
 enum Command {
 	Init,
 	CatFile,
-	#[default]
-	Help,
 }
 
 fn main() {
-	let args: Vec<String> = env::args().collect();
+    let cmd = Command::parse();
 
-	if args.len() < 2 {
-		return help()
-	}
-
-	let Ok(command) = Command::from_str(args[1].as_str()) else {
-		eprintln!("Unknown command: {}", args[1]);
-		return help()
-	};
-
-	match command {
-		Command::Init => init(),
-		Command::CatFile => cat_file(),
-		Command::Help => help(),
-	}
+    match cmd {
+        Command::Init => init(),
+        Command::CatFile => cat_file(),
+    }
 }
 
 fn init() {
@@ -44,8 +30,4 @@ fn init() {
 
 fn cat_file() {
 	println!("running cat-file")
-}
-
-fn help() {
-	println!("Usage: rust-git-lite COMMAND <flags>")
 }
