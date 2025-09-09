@@ -1,7 +1,7 @@
 [package]
-name = "codecrafters-git"
+name = "rust-git-lite"
 version = "0.1.0"
-authors = ["Codecrafters <hello@codecrafters.io>"]
+authors = ["etcetera <hubertetcetera@gmail.com>"]
 edition = "2021"
 rust-version = "1.80"
 
