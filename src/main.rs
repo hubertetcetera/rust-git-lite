@@ -5,12 +5,14 @@ use std::fs;
 
 use clap::Parser;
 
+mod consts;
+
 #[derive(Debug, Parser)]
-#[command(about = "A minimal git cli implemented in Rust")]
+#[command(about = consts::ABOUT_CLI)]
 enum Command {
-    #[command(about = "Create an empty Git repository or reinitialize an existing one")]
+    #[command(about = consts::ABOUT_INIT)]
 	Init,
-    #[command(about = "Provide content or type and size information for repository objects")]
+    #[command(about = consts::ABOUT_CATFILE)]
 	CatFile,
 }
 
