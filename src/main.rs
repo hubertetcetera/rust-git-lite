@@ -1,14 +1,16 @@
 use clap::Parser;
 
-mod consts;
 mod helpers;
 
+/// A minimal git cli implemented in Rust
 #[derive(Debug, Parser)]
-#[command(about = consts::ABOUT_CLI)]
+#[command()]
 enum Command {
-	#[command(about = consts::ABOUT_INIT)]
+    /// Create an empty Git repository or reinitialize an existing one
+	#[command()]
 	Init,
-	#[command(about = consts::ABOUT_CATFILE)]
+	/// Provide content or type and size information for repository objects
+	#[command()]
 	CatFile,
 }
 
