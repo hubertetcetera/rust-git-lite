@@ -1,22 +1,14 @@
-use clap::Parser;
-
+mod commands;
 mod helpers;
 
-/// A minimal git cli implemented in Rust
-#[derive(Debug, Parser)]
-#[command(author, version, about)]
-enum Command {
-    /// Create an empty Git repository or reinitialize an existing one
-	Init,
-	/// Provide content or type and size information for repository objects
-	CatFile,
-}
+use clap::Parser;
+use commands::Command;
 
 fn main() {
 	let cmd = Command::parse();
 
 	match cmd {
 		Command::Init => helpers::init(),
-		Command::CatFile => helpers::cat_file(),
+		Command::CatFile(_args) => helpers::cat_file(),
 	}
 }
