@@ -17,11 +17,5 @@ pub struct CatFileArgs {
 	pretty: bool,
 	/// The name of the object to show
 	#[arg(required = true)]
-	object: String,
-}
-
-impl CatFileArgs {
-	pub fn get_object(&self) -> String {
-		self.object.clone()
-	}
+	pub object: String,
 }
