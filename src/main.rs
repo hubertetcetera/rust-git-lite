@@ -9,6 +9,6 @@ fn main() {
 
 	match cmd {
 		Command::Init => helpers::init(),
-		Command::CatFile(_args) => helpers::cat_file(),
+		Command::CatFile(args) => helpers::cat_file(args),
 	}
 }
