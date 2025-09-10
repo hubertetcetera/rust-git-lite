@@ -4,6 +4,7 @@ mod helpers;
 
 /// A minimal git cli implemented in Rust
 #[derive(Debug, Parser)]
+#[command(author, version, about)]
 enum Command {
     /// Create an empty Git repository or reinitialize an existing one
 	Init,
