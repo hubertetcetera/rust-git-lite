@@ -1,5 +1,7 @@
 use clap::{Args, Parser};
 
+use crate::types::ObjectId;
+
 /// A minimal git cli implemented in Rust
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
@@ -17,5 +19,5 @@ pub struct CatFileArgs {
 	pretty: bool,
 	/// The name of the object to show
 	#[arg(required = true)]
-	pub object: String,
+	pub object: ObjectId,
 }
