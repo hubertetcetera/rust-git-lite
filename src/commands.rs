@@ -12,6 +12,7 @@ pub enum Command {
 	CatFile(CatFileArgs),
 }
 
+/// Command-line arguments for the `cat-file` subcommand.
 #[derive(Debug, Args)]
 pub struct CatFileArgs {
 	/// Pretty-print the contents of <object> based on its type
