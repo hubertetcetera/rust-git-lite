@@ -1,6 +1,7 @@
 mod commands;
 mod helpers;
 mod types;
+mod utils;
 
 use clap::Parser;
 use commands::Command;
