@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Args, Parser};
 
 use crate::types::ObjectId;
@@ -10,6 +12,8 @@ pub enum Command {
 	Init,
 	/// Provide content or type and size information for repository objects
 	CatFile(CatFileArgs),
+	/// Compute the `ObjectId` for a given file
+	HashObject(HashObjectArgs),
 }
 
 /// Command-line arguments for the `cat-file` subcommand.
@@ -21,4 +25,15 @@ pub struct CatFileArgs {
 	/// The name of the object to show
 	#[arg(required = true)]
 	pub object: ObjectId,
+}
+
+/// Command-line arguments for the `hash-object` command
+#[derive(Debug, Args)]
+pub struct HashObjectArgs {
+	/// Write `object` to the `.git/objects` directory
+	#[arg(short = 'w')]
+	write: bool,
+	/// Path to the input file
+	#[arg(required = true)]
+	file: PathBuf,
 }

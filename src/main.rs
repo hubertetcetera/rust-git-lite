@@ -12,5 +12,6 @@ fn main() {
 	match cmd {
 		Command::Init => helpers::init(),
 		Command::CatFile(args) => helpers::cat_file(args),
+		Command::HashObject(args) => helpers::hash_object(args),
 	}
 }

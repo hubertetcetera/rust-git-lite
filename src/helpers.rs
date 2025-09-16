@@ -5,7 +5,10 @@ use std::{
 
 use flate2::read::ZlibDecoder;
 
-use crate::{commands::CatFileArgs, utils::is_valid_sha1};
+use crate::{
+	commands::{CatFileArgs, HashObjectArgs},
+	utils::is_valid_sha1,
+};
 
 /// Initializes a Git repository if one doesn't exist already. Panics on failure.
 pub fn init() {
@@ -61,4 +64,9 @@ pub fn cat_file(args: CatFileArgs) {
 		print!("{}", content.split_off(null_pos + 1)) // then split off everything before the content
 		                                        // (including the null byte)
 	}
+}
+
+/// TODO: Add documentation
+pub fn hash_object(_args: HashObjectArgs) {
+	todo!()
 }
