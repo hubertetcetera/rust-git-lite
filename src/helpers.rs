@@ -1,13 +1,11 @@
-use std::{
-	fs,
-	io::{Cursor, Read},
-};
-
-use flate2::read::ZlibDecoder;
-
 use crate::{
 	commands::{CatFileArgs, HashObjectArgs},
 	utils::is_valid_sha1,
+};
+use flate2::read::ZlibDecoder;
+use std::{
+	fs,
+	io::{Cursor, Read},
 };
 
 /// Initializes a Git repository if one doesn't exist already. Panics on failure.

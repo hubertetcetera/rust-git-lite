@@ -1,8 +1,6 @@
-use std::path::PathBuf;
-
-use clap::{Args, Parser};
-
 use crate::types::ObjectId;
+use clap::{Args, Parser};
+use std::path::PathBuf;
 
 /// A minimal git cli implemented in Rust
 #[derive(Debug, Parser)]
