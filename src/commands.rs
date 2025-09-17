@@ -32,8 +32,8 @@ pub struct CatFileArgs {
 pub struct HashObjectArgs {
 	/// Write `object` to the `.git/objects` directory
 	#[arg(short = 'w')]
-	write: bool,
+	pub write: bool,
 	/// Path to the input file
 	#[arg(required = true)]
-	file: PathBuf,
+	pub file: PathBuf,
 }
