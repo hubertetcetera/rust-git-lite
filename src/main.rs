@@ -6,7 +6,7 @@ mod utils;
 use clap::Parser;
 use commands::Command;
 
-fn main() {
+fn main() -> Result<(), anyhow::Error> {
 	let cmd = Command::parse();
 
 	match cmd {
