@@ -4,11 +4,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use flate2::read::ZlibDecoder;
-use std::{
-	fs,
-	io::Read,
-	path::PathBuf,
-};
+use std::{fs, io::Read, path::PathBuf};
 
 /// Initializes a Git repository if one doesn't exist already.
 pub fn init() -> Result<()> {
