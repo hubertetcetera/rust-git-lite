@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use flate2::read::ZlibDecoder;
 use std::{
 	fs,
-	io::{Cursor, Read},
+	io::Read,
 	path::PathBuf,
 };
 
