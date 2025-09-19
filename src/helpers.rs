@@ -3,8 +3,13 @@ use crate::{
 	utils::ensure_valid_sha1,
 };
 use anyhow::{Context, Result};
-use flate2::read::ZlibDecoder;
-use std::{fs, io::Read, path::PathBuf};
+use flate2::{read::ZlibDecoder, write::ZlibEncoder, Compression};
+use sha1::{Digest, Sha1};
+use std::{
+	fs,
+	io::{Read, Write},
+	path::PathBuf,
+};
 
 /// Initializes a Git repository if one doesn't exist already.
 pub fn init() -> Result<()> {
@@ -56,7 +61,33 @@ pub fn cat_file(args: CatFileArgs) -> Result<()> {
 	Ok(())
 }
 
-/// TODO: Add documentation
-pub fn hash_object(_args: HashObjectArgs) -> Result<()> {
-	todo!()
+/// Computes the SHA-1 hash for given object. Optionally, writes the file to `.git/objects`
+/// directory if used with `-w` flag.
+pub fn hash_object(args: HashObjectArgs) -> Result<()> {
+	let path = args.file;
+	let buf = fs::read(&path).with_context(|| format!("read file at {}", path.display()))?;
+	let size = buf.len();
+	let header = format!("blob {size}\0");
+
+	let contents = [Vec::from(header.as_bytes()), buf].concat();
+
+	let sha1_digest = Sha1::digest(&contents);
+
+	let hash = format!("{:x}", sha1_digest);
+
+	if args.write {
+		let (dir, file) = hash.split_at(2);
+		let dir_path = PathBuf::from(".git/objects").join(dir);
+		let file_path = dir_path.join(file);
+		fs::create_dir_all(&dir_path)
+			.with_context(|| format!("create directory at {}", dir_path.display()))?;
+		let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+		encoder.write_all(contents.as_slice()).context("write buffer to encoder")?;
+		let contents = encoder.finish().context("retrieve encoded content")?;
+		fs::write(&file_path, contents)
+			.with_context(|| format!("write to {}", file_path.display()))?;
+	}
+
+	println!("{hash}");
+	Ok(())
 }
