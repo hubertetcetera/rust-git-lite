@@ -13,3 +13,32 @@ pub fn ensure_valid_sha1(s: &str) -> Result<()> {
 
 	Ok(())
 }
+
+#[cfg(test)]
+mod test {
+	use crate::utils::ensure_valid_sha1;
+
+	#[test]
+	fn should_pass_sha1_is_correct() {
+		let result = ensure_valid_sha1("e3cf93f814459d888602bea15035f348f6208e8c");
+		assert!(result.is_ok());
+	}
+
+	#[test]
+	fn should_fail_sha1_is_too_short() {
+		let result = ensure_valid_sha1("e3cf93f814459d888602bea15035f348f6208e8");
+		assert!(result.is_err());
+	}
+
+	#[test]
+	fn should_fail_sha1_is_too_long() {
+		let result = ensure_valid_sha1("e3cf93f814459d888602bea15035f348f6208e8ce");
+		assert!(result.is_err());
+	}
+
+	#[test]
+	fn should_fail_sha1_contains_non_hex_char() {
+		let result = ensure_valid_sha1("g3cf93f814459d888602bea15035f348f6208e8");
+		assert!(result.is_err());
+	}
+}
