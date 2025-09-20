@@ -1,16 +1,12 @@
 use crate::{
 	commands::{CatFileArgs, HashObjectArgs, ListTreeArgs},
 	types::ObjectId,
-	utils::{ensure_valid_sha1, get_path_from_hash},
+	utils::{ensure_valid_sha1, get_path_from_hash, strip_header, zlib_decode},
 };
 use anyhow::{Context, Result};
-use flate2::{read::ZlibDecoder, write::ZlibEncoder, Compression};
+use flate2::{write::ZlibEncoder, Compression};
 use sha1::{Digest, Sha1};
-use std::{
-	fs,
-	io::{Read, Write},
-	path::PathBuf,
-};
+use std::{fs, io::Write, path::PathBuf};
 
 /// Initializes a Git repository if one doesn't exist already.
 pub fn init() -> Result<()> {
@@ -33,24 +29,9 @@ pub fn init() -> Result<()> {
 /// Errors are reported to stderr if the file is missing, corrupt, or malformed.
 pub fn cat_file(args: CatFileArgs) -> Result<()> {
 	let path = get_path_from_hash(args.object)?;
+	let content = zlib_decode(&path).with_context(|| "decode {path} with zlib")?;
 
-	let compressed =
-		fs::read(&path).with_context(|| format!("read object file at '{}'", path.display()))?;
-	let mut decoder = ZlibDecoder::new(&compressed[..]);
-	let mut content = String::new();
-	decoder
-		.read_to_string(&mut content)
-		.with_context(|| format!("decompress object at '{}'", path.display()))?;
-
-	// The format of a blob object file looks like this (after Zlib decompression):
-	// ```
-	//  blob <size>\0<content>
-	// ```
-	// `<size>` is the size of the content (in bytes)
-	// `\0` is a null byte
-	// `<content>` is the actual content of the file
-	let null_pos = content.find('\0').with_context(|| "find NUL after header:")?; // Get the position of the null byte (`\0`)
-	print!("{}", content.split_off(null_pos + 1)); // then split off everything before the content (including the null byte)
+	print!("{}", strip_header(content).context("strip header from decoded content")?); // split off everything before the content (including the null byte)
 
 	Ok(())
 }

@@ -1,8 +1,7 @@
-use std::path::PathBuf;
-
-use anyhow::Result;
-
 use crate::types::ObjectId;
+use anyhow::{Context, Result};
+use flate2::read::ZlibDecoder;
+use std::{fs, io::Read, path::PathBuf};
 
 /// Checks if provided string slice is a valid SHA-1 hash.
 pub fn ensure_valid_sha1(s: &str) -> Result<()> {
@@ -25,6 +24,33 @@ pub fn get_path_from_hash(hash: ObjectId) -> Result<PathBuf> {
 	// would be: `.git/objects/e8/8f7a929cd70b0274c4ea33b209c97fa845fdbc`
 	let (dir, file) = hash.split_at(2);
 	Ok(PathBuf::from(".git").join("objects").join(dir).join(file))
+}
+
+/// Decompress file at given path if it exists.
+pub fn zlib_decode(path: &PathBuf) -> Result<String> {
+	let compressed =
+		fs::read(&path).with_context(|| format!("read object file at '{}'", path.display()))?;
+	let mut decoder = ZlibDecoder::new(&compressed[..]);
+	let mut content = String::new();
+	decoder
+		.read_to_string(&mut content)
+		.with_context(|| format!("decompress object at '{}'", path.display()))?;
+
+	Ok(content)
+}
+
+/// Strips the header for given git object and returns the resulting content. For example:
+///
+/// The format of a blob object file looks like this (after Zlib decompression):
+/// ```
+///  blob <size>\0<content>
+/// ```
+/// `<size>` is the size of the content (in bytes)
+/// `\0` is a null byte
+/// `<content>` is the actual content of the file which the function returns.
+pub fn strip_header(content: String) -> Result<String> {
+	let null_pos = content.find('\0').with_context(|| "find NUL after header:")?; // Get the position of the null byte (`\0`)
+	Ok(content.clone().split_off(null_pos + 1))
 }
 
 #[cfg(test)]
