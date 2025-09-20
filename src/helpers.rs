@@ -1,5 +1,5 @@
 use crate::{
-	commands::{CatFileArgs, HashObjectArgs},
+	commands::{CatFileArgs, HashObjectArgs, ListTreeArgs},
 	utils::ensure_valid_sha1,
 };
 use anyhow::{Context, Result};
@@ -93,6 +93,9 @@ pub fn hash_object(args: HashObjectArgs) -> Result<()> {
 }
 
 /// TODO: add documentation for `ls-tree` helper function
-pub fn ls_tree() -> Result<()> {
-	todo!()
+pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
+	println!("running `ls-tree` with {:?}", args);
+	let sha1 = &args.tree_sha;
+	ensure_valid_sha1(&sha1)?;
+	Ok(())
 }

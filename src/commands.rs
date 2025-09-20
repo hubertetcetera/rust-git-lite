@@ -14,7 +14,7 @@ pub enum Command {
 	HashObject(HashObjectArgs),
 	/// Inspect a tree object
 	#[command(name = "ls-tree")]
-	ListTree,
+	ListTree(ListTreeArgs),
 }
 
 /// Command-line arguments for the `cat-file` subcommand.
@@ -37,4 +37,15 @@ pub struct HashObjectArgs {
 	/// Path to the input file
 	#[arg(required = true)]
 	pub file: PathBuf,
+}
+
+/// Command-line arguments for the `ls-tree` command
+#[derive(Debug, Args)]
+pub struct ListTreeArgs {
+	/// List only filenames
+	#[arg(long = "name-only")]
+	pub name_only: bool,
+	/// SHA-1 hash of the tree object to inspect
+	#[arg(required = true)]
+	pub tree_sha: ObjectId,
 }

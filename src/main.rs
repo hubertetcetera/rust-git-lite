@@ -13,6 +13,6 @@ fn main() -> Result<(), anyhow::Error> {
 		Command::Init => helpers::init(),
 		Command::CatFile(args) => helpers::cat_file(args),
 		Command::HashObject(args) => helpers::hash_object(args),
-		Command::ListTree => helpers::ls_tree(),
+		Command::ListTree(args) => helpers::ls_tree(args),
 	}
 }
