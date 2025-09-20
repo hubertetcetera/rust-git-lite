@@ -1,4 +1,8 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
+
+use crate::types::ObjectId;
 
 /// Checks if provided string slice is a valid SHA-1 hash.
 pub fn ensure_valid_sha1(s: &str) -> Result<()> {
@@ -10,6 +14,17 @@ pub fn ensure_valid_sha1(s: &str) -> Result<()> {
 	}
 
 	Ok(())
+}
+
+/// Derives the path to an object from its hash.
+pub fn get_path_from_hash(hash: ObjectId) -> Result<PathBuf> {
+	ensure_valid_sha1(&hash.to_string())?;
+	// Git derives the path to an object from its hash.
+	//
+	// For example, the path for the object with the hash `e88f7a929cd70b0274c4ea33b209c97fa845fdbc`
+	// would be: `.git/objects/e8/8f7a929cd70b0274c4ea33b209c97fa845fdbc`
+	let (dir, file) = hash.split_at(2);
+	Ok(PathBuf::from(".git").join("objects").join(dir).join(file))
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 use crate::{
 	commands::{CatFileArgs, HashObjectArgs, ListTreeArgs},
-	utils::ensure_valid_sha1,
+	types::ObjectId,
+	utils::{ensure_valid_sha1, get_path_from_hash},
 };
 use anyhow::{Context, Result};
 use flate2::{read::ZlibDecoder, write::ZlibEncoder, Compression};
@@ -31,14 +32,7 @@ pub fn init() -> Result<()> {
 ///
 /// Errors are reported to stderr if the file is missing, corrupt, or malformed.
 pub fn cat_file(args: CatFileArgs) -> Result<()> {
-	ensure_valid_sha1(&args.object)?;
-
-	// Git derives the path to an object from its hash.
-	//
-	// For example, the path for the object with the hash `e88f7a929cd70b0274c4ea33b209c97fa845fdbc`
-	// would be: `.git/objects/e8/8f7a929cd70b0274c4ea33b209c97fa845fdbc`
-	let (dir, file) = args.object.split_at(2);
-	let path = PathBuf::from(".git").join("objects").join(dir).join(file); // Derive the object path using its hash
+	let path = get_path_from_hash(args.object)?;
 
 	let compressed =
 		fs::read(&path).with_context(|| format!("read object file at '{}'", path.display()))?;
@@ -66,19 +60,17 @@ pub fn cat_file(args: CatFileArgs) -> Result<()> {
 pub fn hash_object(args: HashObjectArgs) -> Result<()> {
 	let path = args.file;
 	let buf = fs::read(&path).with_context(|| format!("read file at {}", path.display()))?;
-	let size = buf.len();
-	let header = format!("blob {size}\0");
-
+	let header = format!("blob {}\0", buf.len());
 	let contents = [Vec::from(header.as_bytes()), buf].concat();
-
 	let sha1_digest = Sha1::digest(&contents);
 
 	let hash = format!("{:x}", sha1_digest);
 
 	if args.write {
-		let (dir, file) = hash.split_at(2);
-		let dir_path = PathBuf::from(".git/objects").join(dir);
-		let file_path = dir_path.join(file);
+		let file_path = get_path_from_hash(ObjectId::from(hash.clone()))?;
+		let dir_path = file_path
+			.parent()
+			.with_context(|| format!("get parent directory at {}", file_path.display()))?;
 		fs::create_dir_all(&dir_path)
 			.with_context(|| format!("create directory at {}", dir_path.display()))?;
 		let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
