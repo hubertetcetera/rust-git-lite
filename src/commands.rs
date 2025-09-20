@@ -12,6 +12,9 @@ pub enum Command {
 	CatFile(CatFileArgs),
 	/// Compute the `ObjectId` for a given file
 	HashObject(HashObjectArgs),
+	/// Inspect a tree object
+	#[command(name = "ls-tree")]
+	ListTree,
 }
 
 /// Command-line arguments for the `cat-file` subcommand.

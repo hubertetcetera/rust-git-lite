@@ -91,3 +91,8 @@ pub fn hash_object(args: HashObjectArgs) -> Result<()> {
 	println!("{hash}");
 	Ok(())
 }
+
+/// TODO: add documentation for `ls-tree` helper function
+pub fn ls_tree() -> Result<()> {
+	todo!()
+}
