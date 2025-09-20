@@ -1,7 +1,7 @@
 use crate::{
 	commands::{CatFileArgs, HashObjectArgs, ListTreeArgs},
 	types::ObjectId,
-	utils::{ensure_valid_sha1, get_path_from_hash, strip_header, zlib_decode},
+	utils::{ensure_object_header_type, get_path_from_hash, strip_header, zlib_decode},
 };
 use anyhow::{Context, Result};
 use flate2::{write::ZlibEncoder, Compression};
@@ -28,10 +28,10 @@ pub fn init() -> Result<()> {
 ///
 /// Errors are reported to stderr if the file is missing, corrupt, or malformed.
 pub fn cat_file(args: CatFileArgs) -> Result<()> {
-	let path = get_path_from_hash(args.object)?;
+	let path = get_path_from_hash(&args.object)?;
 	let content = zlib_decode(&path).with_context(|| "decode {path} with zlib")?;
 
-	print!("{}", strip_header(content).context("strip header from decoded content")?); // split off everything before the content (including the null byte)
+	print!("{}", strip_header(&content).context("strip header from decoded content")?); // split off everything before the content (including the null byte)
 
 	Ok(())
 }
@@ -48,7 +48,7 @@ pub fn hash_object(args: HashObjectArgs) -> Result<()> {
 	let hash = format!("{:x}", sha1_digest);
 
 	if args.write {
-		let file_path = get_path_from_hash(ObjectId::from(hash.clone()))?;
+		let file_path = get_path_from_hash(&ObjectId::from(hash.clone()))?;
 		let dir_path = file_path
 			.parent()
 			.with_context(|| format!("get parent directory at {}", file_path.display()))?;
@@ -67,8 +67,9 @@ pub fn hash_object(args: HashObjectArgs) -> Result<()> {
 
 /// TODO: add documentation for `ls-tree` helper function
 pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
-	println!("running `ls-tree` with {:?}", args);
-	let sha1 = &args.tree_sha;
-	ensure_valid_sha1(&sha1)?;
+	let path = get_path_from_hash(&args.tree_sha)?;
+	let content = zlib_decode(&path)?;
+	ensure_object_header_type(&content, "tree")?;
+	dbg!(content);
 	Ok(())
 }

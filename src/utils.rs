@@ -16,7 +16,7 @@ pub fn ensure_valid_sha1(s: &str) -> Result<()> {
 }
 
 /// Derives the path to an object from its hash.
-pub fn get_path_from_hash(hash: ObjectId) -> Result<PathBuf> {
+pub fn get_path_from_hash(hash: &ObjectId) -> Result<PathBuf> {
 	ensure_valid_sha1(&hash.to_string())?;
 	// Git derives the path to an object from its hash.
 	//
@@ -48,9 +48,16 @@ pub fn zlib_decode(path: &PathBuf) -> Result<String> {
 /// `<size>` is the size of the content (in bytes)
 /// `\0` is a null byte
 /// `<content>` is the actual content of the file which the function returns.
-pub fn strip_header(content: String) -> Result<String> {
+pub fn strip_header(content: &String) -> Result<String> {
 	let null_pos = content.find('\0').with_context(|| "find NUL after header:")?; // Get the position of the null byte (`\0`)
 	Ok(content.clone().split_off(null_pos + 1))
+}
+
+pub fn ensure_object_header_type(content: &String, expected_type: &str) -> Result<()> {
+	if !content.starts_with(expected_type) {
+		anyhow::bail!("not a tree object: header doesn't start with `tree` keyword")
+	}
+	Ok(())
 }
 
 #[cfg(test)]
