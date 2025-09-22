@@ -31,6 +31,9 @@ pub fn cat_file(args: CatFileArgs) -> Result<()> {
 	let path = get_path_from_hash(&args.object)?;
 	let content = zlib_decode(&path).with_context(|| "decode {path} with zlib")?;
 
+	let content = String::from_utf8(content).with_context(|| {
+		format!("convert decoded content to string using utf8 at {}", path.display())
+	})?;
 	print!("{}", strip_header(&content).context("strip header from decoded content")?); // split off everything before the content (including the null byte)
 
 	Ok(())
@@ -69,7 +72,25 @@ pub fn hash_object(args: HashObjectArgs) -> Result<()> {
 pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
 	let path = get_path_from_hash(&args.tree_sha)?;
 	let content = zlib_decode(&path)?;
+	let content = String::from_utf8(content).with_context(|| {
+		format!("convert decoded content to string using utf8 at {}", path.display())
+	})?;
+
 	ensure_object_header_type(&content, "tree")?;
-	dbg!(content);
+	let content = strip_header(&content).context("strip header from decoded content")?;
+	let entries = content.lines();
+	let entries = entries.for_each(|line| {
+		let split: Vec<&str> = line.split("\0").collect();
+		// TODO: add check for malformed content - expected:
+		// The entries in the tree object should look like this:
+		//
+		// ```
+		// 40000 dir1 <tree_sha_1>
+		// 40000 dir2 <tree_sha_2>
+		// 100644 file1 <blob_sha_1>
+		// ```
+
+		println!("{:?}", split);
+	});
 	Ok(())
 }

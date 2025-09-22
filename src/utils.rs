@@ -27,13 +27,13 @@ pub fn get_path_from_hash(hash: &ObjectId) -> Result<PathBuf> {
 }
 
 /// Decompress file at given path if it exists.
-pub fn zlib_decode(path: &PathBuf) -> Result<String> {
+pub fn zlib_decode(path: &PathBuf) -> Result<Vec<u8>> {
 	let compressed =
 		fs::read(&path).with_context(|| format!("read object file at '{}'", path.display()))?;
 	let mut decoder = ZlibDecoder::new(&compressed[..]);
-	let mut content = String::new();
+	let mut content = Vec::new();
 	decoder
-		.read_to_string(&mut content)
+		.read_to_end(&mut content)
 		.with_context(|| format!("decompress object at '{}'", path.display()))?;
 
 	Ok(content)
