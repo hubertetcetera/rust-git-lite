@@ -41,6 +41,23 @@ impl Display for ObjectId {
 	}
 }
 
+/// Available Git object types
+#[derive(Debug)]
+pub enum ObjectType {
+    /// Blob objects store the raw content of a file.
+    Blob,
+    /// Tree objects store the directory structure of a Git repository.
+    Tree
+}
+
+/// Metadata that is prepended to Git objects before compression.
+#[derive(Debug)]
+pub struct Header {
+    pub object_type: ObjectType,
+    /// The size of the raw (uncompressed) content in bytes.
+    pub size: usize,
+}
+
 /// Trees are used to store directory structures. Each tree object contains one or more entries,
 /// each of which is the SHA-1 hash of a blob or subtree with its associated mode, type, and
 /// filename.
