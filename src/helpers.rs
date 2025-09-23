@@ -76,21 +76,21 @@ pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
 		format!("convert decoded content to string using utf8 at {}", path.display())
 	})?;
 
-	ensure_object_header_type(&content, "tree")?;
-	let content = strip_header(&content).context("strip header from decoded content")?;
-	let entries = content.lines();
-	let entries = entries.for_each(|line| {
-		let split: Vec<&str> = line.split("\0").collect();
-		// TODO: add check for malformed content - expected:
-		// The entries in the tree object should look like this:
-		//
-		// ```
-		// 40000 dir1 <tree_sha_1>
-		// 40000 dir2 <tree_sha_2>
-		// 100644 file1 <blob_sha_1>
-		// ```
+	// ensure_object_header_type(&content, "tree")?;
+	// let content = strip_header(&content).context("strip header from decoded content")?;
+	// let entries = content.lines();
+	// let entries = entries.for_each(|line| {
+	// 	let split: Vec<&str> = line.split("\0").collect();
+	// 	// TODO: add check for malformed content - expected:
+	// 	// The entries in the tree object should look like this:
+	// 	//
+	// 	// ```
+	// 	// 40000 dir1 <tree_sha_1>
+	// 	// 40000 dir2 <tree_sha_2>
+	// 	// 100644 file1 <blob_sha_1>
+	// 	// ```
 
-		println!("{:?}", split);
-	});
+	// 	println!("{:?}", split);
+	// });
 	Ok(())
 }
