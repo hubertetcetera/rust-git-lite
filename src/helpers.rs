@@ -98,7 +98,7 @@ pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
 
 	for (mode, name, sha) in entries_raw {
 		let name = String::from_utf8(name).context("read entry name from raw bytes")?;
-		if !args.name_only {
+		if args.name_only {
 			println!("{}", name);
 		} else {
 			let mode = String::from_utf8(mode).context("read entry mode from raw bytes")?;
