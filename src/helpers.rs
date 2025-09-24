@@ -1,7 +1,7 @@
 use crate::{
 	commands::{CatFileArgs, HashObjectArgs, ListTreeArgs},
 	types::ObjectId,
-	utils::{ensure_object_header_type, get_path_from_hash, strip_header, zlib_decode},
+	utils::{get_path_from_hash, parse_content_raw_bytes, strip_header, zlib_decode},
 };
 use anyhow::{Context, Result};
 use flate2::{write::ZlibEncoder, Compression};
@@ -55,7 +55,7 @@ pub fn hash_object(args: HashObjectArgs) -> Result<()> {
 		let dir_path = file_path
 			.parent()
 			.with_context(|| format!("get parent directory at {}", file_path.display()))?;
-		fs::create_dir_all(&dir_path)
+		fs::create_dir_all(dir_path)
 			.with_context(|| format!("create directory at {}", dir_path.display()))?;
 		let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
 		encoder.write_all(contents.as_slice()).context("write buffer to encoder")?;
@@ -68,29 +68,42 @@ pub fn hash_object(args: HashObjectArgs) -> Result<()> {
 	Ok(())
 }
 
-/// TODO: add documentation for `ls-tree` helper function
+/// Lists the contents of a tree object
 pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
 	let path = get_path_from_hash(&args.tree_sha)?;
 	let content = zlib_decode(&path)?;
-	let content = String::from_utf8(content).with_context(|| {
-		format!("convert decoded content to string using utf8 at {}", path.display())
-	})?;
+	let (_, bytes) = parse_content_raw_bytes(&content)?;
 
-	// ensure_object_header_type(&content, "tree")?;
-	// let content = strip_header(&content).context("strip header from decoded content")?;
-	// let entries = content.lines();
-	// let entries = entries.for_each(|line| {
-	// 	let split: Vec<&str> = line.split("\0").collect();
-	// 	// TODO: add check for malformed content - expected:
-	// 	// The entries in the tree object should look like this:
-	// 	//
-	// 	// ```
-	// 	// 40000 dir1 <tree_sha_1>
-	// 	// 40000 dir2 <tree_sha_2>
-	// 	// 100644 file1 <blob_sha_1>
-	// 	// ```
+	let mut entries_raw: Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> = vec![];
 
-	// 	println!("{:?}", split);
-	// });
+	let mut i = 0usize;
+	while i < bytes.len() {
+		let rel_space = bytes[i..].iter().position(|&b| b == b' ').context("get rel_space")?;
+		let mode_end = i + rel_space;
+		let mode = bytes[i..mode_end].to_vec();
+
+		let rel_nul = bytes[mode_end + 1..].iter().position(|&b| b == 0).context("get rel_nul")?;
+		let name_end = mode_end + 1 + rel_nul;
+		let name = bytes[mode_end + 1..name_end].to_vec();
+
+		let sha_start = name_end + 1;
+		let sha_end = name_end + 1 + 20;
+
+		let sha = bytes[sha_start..sha_end].to_vec();
+
+		entries_raw.push((mode, name, sha));
+
+		i = sha_end;
+	}
+
+	for (mode, name, sha) in entries_raw {
+		let name = String::from_utf8(name).context("read entry name from raw bytes")?;
+		if !args.name_only {
+			println!("{}", name);
+		} else {
+			let mode = String::from_utf8(mode).context("read entry mode from raw bytes")?;
+			println!("{} {} {}", mode, name, hex::encode(&sha))
+		}
+	}
 	Ok(())
 }

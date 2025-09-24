@@ -1,5 +1,5 @@
-use crate::types::ObjectId;
-use anyhow::{Context, Result};
+use crate::types::{Header, ObjectId};
+use anyhow::{ensure, Context, Result};
 use flate2::read::ZlibDecoder;
 use std::{fs, io::Read, path::PathBuf};
 
@@ -29,7 +29,7 @@ pub fn get_path_from_hash(hash: &ObjectId) -> Result<PathBuf> {
 /// Decompress file at given path if it exists.
 pub fn zlib_decode(path: &PathBuf) -> Result<Vec<u8>> {
 	let compressed =
-		fs::read(&path).with_context(|| format!("read object file at '{}'", path.display()))?;
+		fs::read(path).with_context(|| format!("read object file at '{}'", path.display()))?;
 	let mut decoder = ZlibDecoder::new(&compressed[..]);
 	let mut content = Vec::new();
 	decoder
@@ -50,18 +50,31 @@ pub fn zlib_decode(path: &PathBuf) -> Result<Vec<u8>> {
 /// `<content>` is the actual content of the file which the function returns.
 ///
 /// TODO: add check for ensuring header isn't malformed
-pub fn strip_header(content: &String) -> Result<String> {
+pub fn strip_header(content: &str) -> Result<String> {
 	let nul_pos = content.find('\0').with_context(|| "find NUL after header:")?; // Get the position of the null byte (`\0`)
-	Ok(content.clone().split_off(nul_pos + 1))
+	Ok(content.to_owned().split_off(nul_pos + 1))
 }
 
-/// TODO: add documentation
-pub fn ensure_object_header_type(content: &String, expected_type: &str) -> Result<()> {
-	// TODO: change content type to `&str`
-	if !content.starts_with(expected_type) {
-		anyhow::bail!("not a tree object: header doesn't start with `tree` keyword")
-	}
-	Ok(())
+/// Parses `&[u8]` slice into a tuple (`Header`, `Vec<u8>`)
+pub fn parse_content_raw_bytes(bytes: &[u8]) -> Result<(Header, Vec<u8>)> {
+	let mut content_iter = bytes.split(|b| b == &0);
+	let Ok(header_string) =
+		String::from_utf8(content_iter.next().context("extract header from raw bytes")?.to_vec())
+	else {
+		anyhow::bail!("failed to parse header from input")
+	};
+
+	let mut header_iter = header_string.split_whitespace();
+	// TODO: ensure size matches actual content size
+	let object_type = header_iter.next().context("get object type from header")?.parse()?;
+	let size = header_iter.next().context("get object size from header")?.parse()?;
+
+	let header = Header::new(object_type, size);
+
+	ensure!(header_iter.next().is_none());
+
+	let content: Vec<&[u8]> = content_iter.collect();
+	Ok((header, content.join(&0)))
 }
 
 #[cfg(test)]

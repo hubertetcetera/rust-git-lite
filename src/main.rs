@@ -1,4 +1,5 @@
 mod commands;
+mod errors;
 mod helpers;
 mod types;
 mod utils;
