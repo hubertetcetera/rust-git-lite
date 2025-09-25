@@ -120,9 +120,14 @@ pub fn write_tree(path: Option<PathBuf>) -> Result<()> {
 	for entry in fs::read_dir(path)? {
 		let path = entry?.path();
 		let is_git_dir = path.components().any(|p| p.as_os_str() == ".git");
+		// if path is a directory, create a tree object
+		// also record its SHA-1 hash
 		if path.is_dir() && !is_git_dir {
 			let _ = write_tree(Some(path));
 		}
+		// if path is a file, create a blob object
+		// also record its SHA-1 hash
+
 	}
 	Ok(())
 }
