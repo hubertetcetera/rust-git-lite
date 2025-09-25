@@ -3,7 +3,7 @@ use crate::{
 	types::ObjectId,
 	utils::{get_path_from_hash, parse_content_raw_bytes, strip_header, zlib_decode},
 };
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use flate2::{write::ZlibEncoder, Compression};
 use sha1::{Digest, Sha1};
 use std::{fs, io::Write, path::PathBuf};
@@ -105,5 +105,14 @@ pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
 			println!("{} {} {}", mode, name, hex::encode(&sha))
 		}
 	}
+	Ok(())
+}
+
+/// Create a tree object from the current state of the staging area*.
+///
+/// *Please note that for the purpose of this minimal implementation, we don't implement a staging
+/// area, we'll just assume that all files in the working directory are staged.
+pub fn write_tree() -> Result<()> {
+	println!("received write-tree command");
 	Ok(())
 }

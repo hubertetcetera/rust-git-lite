@@ -15,6 +15,8 @@ pub enum Command {
 	/// Inspect a tree object
 	#[command(name = "ls-tree")]
 	ListTree(ListTreeArgs),
+	/// Create a tree object from the current state of the working directory.
+	WriteTree,
 }
 
 /// Command-line arguments for the `cat-file` subcommand.

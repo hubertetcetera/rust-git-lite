@@ -15,5 +15,6 @@ fn main() -> Result<(), anyhow::Error> {
 		Command::CatFile(args) => helpers::cat_file(args),
 		Command::HashObject(args) => helpers::hash_object(args),
 		Command::ListTree(args) => helpers::ls_tree(args),
+		Command::WriteTree => helpers::write_tree(),
 	}
 }
