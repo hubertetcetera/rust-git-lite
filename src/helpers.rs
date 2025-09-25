@@ -6,7 +6,7 @@ use crate::{
 use anyhow::{Context, Ok, Result};
 use flate2::{write::ZlibEncoder, Compression};
 use sha1::{Digest, Sha1};
-use std::{fs, io::Write, path::PathBuf};
+use std::{env::current_dir, fs, io::Write, path::PathBuf};
 
 /// Initializes a Git repository if one doesn't exist already.
 pub fn init() -> Result<()> {
@@ -112,7 +112,17 @@ pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
 ///
 /// *Please note that for the purpose of this minimal implementation, we don't implement a staging
 /// area, we'll just assume that all files in the working directory are staged.
-pub fn write_tree() -> Result<()> {
-	println!("received write-tree command");
+pub fn write_tree(path: Option<PathBuf>) -> Result<()> {
+	let current_dir = current_dir().context("get current directory")?;
+	let path = path.unwrap_or(current_dir);
+	println!("received write-tree command at {}", path.display());
+	// TODO: use walkdir for cleaner traversal
+	for entry in fs::read_dir(path)? {
+		let path = entry?.path();
+		let is_git_dir = path.components().any(|p| p.as_os_str() == ".git");
+		if path.is_dir() && !is_git_dir {
+			let _ = write_tree(Some(path));
+		}
+	}
 	Ok(())
 }

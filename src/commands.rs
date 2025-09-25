@@ -16,7 +16,7 @@ pub enum Command {
 	#[command(name = "ls-tree")]
 	ListTree(ListTreeArgs),
 	/// Create a tree object from the current state of the working directory.
-	WriteTree,
+	WriteTree(WriteTreeArgs),
 }
 
 /// Command-line arguments for the `cat-file` subcommand.
@@ -50,4 +50,9 @@ pub struct ListTreeArgs {
 	/// SHA-1 hash of the tree object to inspect
 	#[arg(required = true)]
 	pub tree_sha: ObjectId,
+}
+
+#[derive(Debug, Args)]
+pub struct WriteTreeArgs {
+	pub path: Option<PathBuf>,
 }
