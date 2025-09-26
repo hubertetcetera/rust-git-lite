@@ -5,6 +5,7 @@ use crate::{
 };
 use anyhow::{Context, Ok, Result};
 use flate2::{write::ZlibEncoder, Compression};
+use is_executable::IsExecutable;
 use sha1::{Digest, Sha1};
 use std::{env::current_dir, fs, io::Write, path::PathBuf};
 
@@ -41,7 +42,7 @@ pub fn cat_file(args: CatFileArgs) -> Result<()> {
 
 /// Computes the SHA-1 hash for given object. Optionally, writes the file to `.git/objects`
 /// directory if used with `-w` flag.
-pub fn hash_object(args: HashObjectArgs) -> Result<()> {
+pub fn hash_object(args: HashObjectArgs) -> Result<String> {
 	let path = args.file;
 	let buf = fs::read(&path).with_context(|| format!("read file at {}", path.display()))?;
 	let header = format!("blob {}\0", buf.len());
@@ -64,8 +65,10 @@ pub fn hash_object(args: HashObjectArgs) -> Result<()> {
 			.with_context(|| format!("write to {}", file_path.display()))?;
 	}
 
-	println!("{hash}");
-	Ok(())
+	if !args.quiet {
+		println!("{hash}");
+	}
+	Ok(hash)
 }
 
 /// Lists the contents of a tree object
@@ -116,12 +119,25 @@ pub fn write_tree(path: Option<PathBuf>) -> Result<()> {
 	let current_dir = current_dir().context("get current directory")?;
 	let path = path.unwrap_or(current_dir);
 	println!("received write-tree command at {}", path.display());
+	let buf = std::io::BufWriter::new(Vec::new());
 	// TODO: use walkdir for cleaner traversal
 	for entry in fs::read_dir(path)? {
 		let path = entry?.path();
 		let is_git_dir = path.components().any(|p| p.as_os_str() == ".git");
-		if path.is_dir() && !is_git_dir {
+		if is_git_dir {
+			continue;
+		}
+		if path.is_dir() {
 			let _ = write_tree(Some(path));
+		} else if path.is_symlink() {
+			let file_hash = hash_object(HashObjectArgs::new(true, path, true))?;
+			let mode = "120000";
+		} else if path.is_executable() {
+			let file_hash = hash_object(HashObjectArgs::new(true, path, true))?;
+			let mode = "100755";
+		} else if path.is_file() {
+			let file_hash = hash_object(HashObjectArgs::new(true, path, true))?;
+			let mode = "100644";
 		}
 	}
 	Ok(())

@@ -39,6 +39,15 @@ pub struct HashObjectArgs {
 	/// Path to the input file
 	#[arg(required = true)]
 	pub file: PathBuf,
+	/// Run silently. Do not print the object ID
+	#[arg(short = 'q', long = "quiet")]
+	pub quiet: bool,
+}
+
+impl HashObjectArgs {
+	pub fn new(write: bool, file: PathBuf, quiet: bool) -> Self {
+		Self { write, file, quiet }
+	}
 }
 
 /// Command-line arguments for the `ls-tree` command
