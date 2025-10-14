@@ -64,4 +64,7 @@ pub struct ListTreeArgs {
 #[derive(Debug, Args)]
 pub struct WriteTreeArgs {
 	pub path: Option<PathBuf>,
+	/// Run silently. Do not print the object ID
+	#[arg(short = 'q', long = "quiet")]
+	pub quiet: bool,
 }

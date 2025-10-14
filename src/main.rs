@@ -19,6 +19,6 @@ fn main() -> Result<(), anyhow::Error> {
 			Ok(())
 		},
 		Command::ListTree(args) => helpers::ls_tree(args),
-		Command::WriteTree(args) => helpers::write_tree(args.path),
+		Command::WriteTree(args) => helpers::write_tree(args),
 	}
 }

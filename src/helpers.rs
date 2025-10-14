@@ -1,13 +1,21 @@
 use crate::{
-	commands::{CatFileArgs, HashObjectArgs, ListTreeArgs},
+	commands::{CatFileArgs, HashObjectArgs, ListTreeArgs, WriteTreeArgs},
 	types::ObjectId,
 	utils::{get_path_from_hash, parse_content_raw_bytes, strip_header, zlib_decode},
 };
 use anyhow::{Context, Ok, Result};
 use flate2::{write::ZlibEncoder, Compression};
+use gag::BufferRedirect;
 use is_executable::IsExecutable;
 use sha1::{Digest, Sha1};
-use std::{env::current_dir, fs, io::Write, path::PathBuf};
+use std::{
+	env::current_dir,
+	fmt::format,
+	fs,
+	io::{Read, Write},
+	path::PathBuf,
+	process::Command,
+};
 
 /// Initializes a Git repository if one doesn't exist already.
 pub fn init() -> Result<()> {
@@ -115,11 +123,12 @@ pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
 ///
 /// *Please note that for the purpose of this minimal implementation, we don't implement a staging
 /// area, we'll just assume that all files in the working directory are staged.
-pub fn write_tree(path: Option<PathBuf>) -> Result<()> {
+///
+/// TODO: Refactor function
+pub fn write_tree(args: WriteTreeArgs) -> Result<()> {
 	let current_dir = current_dir().context("get current directory")?;
-	let path = path.unwrap_or(current_dir);
-	println!("received write-tree command at {}", path.display());
-	let buf = std::io::BufWriter::new(Vec::new());
+	let path = args.path.unwrap_or(current_dir);
+	let mut buf = std::io::BufWriter::new(Vec::new());
 	// TODO: use walkdir for cleaner traversal
 	for entry in fs::read_dir(path)? {
 		let path = entry?.path();
@@ -127,18 +136,69 @@ pub fn write_tree(path: Option<PathBuf>) -> Result<()> {
 		if is_git_dir {
 			continue;
 		}
+		let mut mode = String::new();
+		let mut hash = String::new();
 		if path.is_dir() {
-			let _ = write_tree(Some(path));
-		} else if path.is_symlink() {
-			let file_hash = hash_object(HashObjectArgs::new(true, path, true))?;
-			let mode = "120000";
-		} else if path.is_executable() {
-			let file_hash = hash_object(HashObjectArgs::new(true, path, true))?;
-			let mode = "100755";
-		} else if path.is_file() {
-			let file_hash = hash_object(HashObjectArgs::new(true, path, true))?;
-			let mode = "100644";
+			let args = WriteTreeArgs { path: Some(path.clone()), quiet: false };
+			mode = String::from("40000");
+			let mut buffer_redirect =
+				BufferRedirect::stdout().context("read tree hash to buffer redirect")?;
+			write_tree(args).with_context(|| format!("writing tree: {}", path.display()))?;
+
+			buffer_redirect
+				.read_to_string(&mut hash)
+				.context("read hash from redirected buffer to string")?;
+
+			let hash = hex::decode(hash.trim()).context("decode hash string to hex")?;
+			let contents = [
+				mode.as_bytes(),
+				b" ",
+				path.file_name().context("read directory name")?.as_encoded_bytes(),
+				b"\0",
+				&hash,
+			]
+			.concat();
+			buf.write_all(&contents).context("write contents to buffer")?;
+		} else {
+			if path.is_symlink() {
+				mode = String::from("120000");
+			} else if path.is_executable() {
+				mode = String::from("100755");
+			} else if path.is_file() {
+				mode = String::from("100644");
+			}
+
+			let file_hash = hash_object(HashObjectArgs::new(true, path.clone(), true))?;
+			let file_hash = hex::decode(file_hash).context("decode file_hash to hex bytes")?;
+			let name = path
+				.file_name()
+				.with_context(|| format!("reading file_name at: {}", path.display()))?;
+
+			let append_content =
+				[mode.as_bytes(), b" ", name.as_encoded_bytes(), b"\0", &file_hash].concat();
+			buf.write_all(&append_content).context("write content to buffer")?;
 		}
+	}
+
+	let size = buf.buffer().len();
+	let header = format!("tree {size}\0");
+	let contents = [header.as_bytes(), buf.buffer()].concat();
+	let sha1_digest = Sha1::digest(&contents);
+	let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+	encoder.write_all(&contents).context("write contents to encoder buffer")?;
+	let contents = encoder.finish().context("retrieve encoded content")?;
+	let hash = format!("{:x}", sha1_digest);
+
+	let file_path = get_path_from_hash(&ObjectId::from(hash.clone()))?;
+	let dir_path = file_path
+		.parent()
+		.with_context(|| format!("get parent directory at {}", file_path.display()))?;
+	fs::create_dir_all(dir_path)
+		.with_context(|| format!("create directory at {}", dir_path.display()))?;
+	fs::write(&file_path, contents).with_context(|| format!("write to {}", file_path.display()))?;
+
+	if !args.quiet {
+		println!("{hash}");
 	}
 	Ok(())
 }
