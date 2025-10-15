@@ -122,7 +122,10 @@ pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
 /// *Please note that for the purpose of this minimal implementation, we don't implement a staging
 /// area, we'll just assume that all files in the working directory are staged.
 ///
-/// TODO: Refactor function
+/// TODO: Refactor function:
+/// - BufferRedirect isn't the cleanest way to do this, we should change
+/// function return type and use that for recursion.
+/// - In general the function could be simplified and made cleaner, easier to read and maintain
 pub fn write_tree(args: WriteTreeArgs) -> Result<()> {
 	let current_dir = current_dir().context("get current directory")?;
 	let path = args.path.unwrap_or(current_dir);
