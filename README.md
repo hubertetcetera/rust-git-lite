@@ -1,27 +1,7 @@
-> [!WARNING]
-> This project is still **under development**. At the moment it can only read and create blob objects. Check back as more functionality is added!
-
 # rust-git-lite
 
 A lightweight implementation of Git in Rust, built from scratch.
-This project aims to replicate Git’s core functionality from the ground up, focusing on correctness and clarity rather than full feature parity.
-
-## 🚧 Status
-
-Implemented:
-
-- ✅ Initialize the `.git` directory (`init`)
-- ✅ Read a blob object (`cat-file`)
-- ✅ Create a blob object (`hash-object`)
-
-Work in progress:
-
-- ⏳ Read a tree object (`ls-tree`)
-- ⏳ Write a tree object (`write-tree`)
-- ⏳ Create a commit (`commit-tree`)
-- ⏳ Clone a repository (`clone`)
-
----
+This project aims to replicate Git's core functionality from the ground up, focusing on correctness and clarity rather than full feature parity.
 
 ## 🛠️ Usage
 
@@ -32,21 +12,52 @@ cargo build --release
 ./target/release/rust-git-lite <command>
 ```
 
-Examples:
+### Available Commands
+
+#### Initialize a Repository
 
 ```bash
-# Initialize a new repository
 rust-git-lite init
-
-# Write a file as a blob object
-rust-git-lite hash-object -w hello.txt
 ```
 
-## 📂 Project Goal
+#### Create a Blob Object
 
-The end goal is a fully working minimal Git, capable of:
+```bash
+# Hash and write a file as a blob object
+rust-git-lite hash-object -w hello.txt
 
-- Initializing the `.git` directory
-- Reading and creating objects (blobs, trees)
-- Creating commits
-- Cloning a repository
+# Just compute the hash without writing
+rust-git-lite hash-object hello.txt
+```
+
+#### Read an Object
+
+```bash
+# Pretty-print the contents of an object
+rust-git-lite cat-file -p <object-hash>
+```
+
+#### List Tree Contents
+
+```bash
+# Show full tree details
+rust-git-lite ls-tree <tree-hash>
+
+# Show only filenames
+rust-git-lite ls-tree --name-only <tree-hash>
+```
+
+#### Create a Tree Object
+
+```bash
+# Create a tree from the current working directory
+rust-git-lite write-tree
+```
+
+## ⚠️ Important Differences from Git
+
+### `write-tree` Command
+
+Unlike the actual `git write-tree` command, which creates a tree object from the current state of the **staging area** (where changes go when you run `git add`), this minimal implementation **does not implement a staging area**.
+
+Instead, `write-tree` assumes that **all files in the working directory are staged**. This means it will create a tree object from the entire working directory, excluding the `.git` folder.
