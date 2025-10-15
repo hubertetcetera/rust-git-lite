@@ -10,11 +10,9 @@ use is_executable::IsExecutable;
 use sha1::{Digest, Sha1};
 use std::{
 	env::current_dir,
-	fmt::format,
 	fs,
 	io::{Read, Write},
 	path::PathBuf,
-	process::Command,
 };
 
 /// Initializes a Git repository if one doesn't exist already.
@@ -128,7 +126,7 @@ pub fn ls_tree(args: ListTreeArgs) -> Result<()> {
 pub fn write_tree(args: WriteTreeArgs) -> Result<()> {
 	let current_dir = current_dir().context("get current directory")?;
 	let path = args.path.unwrap_or(current_dir);
-	let mut buf = std::io::BufWriter::new(Vec::new());
+	let mut buf = Vec::new();
 	// TODO: use walkdir for cleaner traversal
 	for entry in fs::read_dir(path)? {
 		let path = entry?.path();
@@ -137,7 +135,7 @@ pub fn write_tree(args: WriteTreeArgs) -> Result<()> {
 			continue;
 		}
 		let mut mode = String::new();
-		let mut hash = String::new();
+		let mut ascii_hash = String::new();
 		if path.is_dir() {
 			let args = WriteTreeArgs { path: Some(path.clone()), quiet: false };
 			mode = String::from("40000");
@@ -146,19 +144,13 @@ pub fn write_tree(args: WriteTreeArgs) -> Result<()> {
 			write_tree(args).with_context(|| format!("writing tree: {}", path.display()))?;
 
 			buffer_redirect
-				.read_to_string(&mut hash)
+				.read_to_string(&mut ascii_hash)
 				.context("read hash from redirected buffer to string")?;
 
-			let hash = hex::decode(hash.trim()).context("decode hash string to hex")?;
-			let contents = [
-				mode.as_bytes(),
-				b" ",
-				path.file_name().context("read directory name")?.as_encoded_bytes(),
-				b"\0",
-				&hash,
-			]
-			.concat();
-			buf.write_all(&contents).context("write contents to buffer")?;
+			let hash_bytes = hex::decode(ascii_hash.trim()).context("decode hash string to hex")?;
+
+			let file_name = path.file_name().context("read directory name")?.to_owned();
+			buf.push((mode, file_name, hash_bytes));
 		} else {
 			if path.is_symlink() {
 				mode = String::from("120000");
@@ -169,20 +161,23 @@ pub fn write_tree(args: WriteTreeArgs) -> Result<()> {
 			}
 
 			let file_hash = hash_object(HashObjectArgs::new(true, path.clone(), true))?;
-			let file_hash = hex::decode(file_hash).context("decode file_hash to hex bytes")?;
+			let hash_bytes = hex::decode(file_hash).context("decode file_hash to hex bytes")?;
 			let name = path
 				.file_name()
 				.with_context(|| format!("reading file_name at: {}", path.display()))?;
 
-			let append_content =
-				[mode.as_bytes(), b" ", name.as_encoded_bytes(), b"\0", &file_hash].concat();
-			buf.write_all(&append_content).context("write content to buffer")?;
+			buf.push((mode, name.to_owned(), hash_bytes));
 		}
 	}
-
-	let size = buf.buffer().len();
+	buf.sort_by(|a, b| a.1.cmp(&b.1));
+	let buf: Vec<Vec<u8>> = buf
+		.iter()
+		.map(|e| [e.0.as_bytes(), b" ", e.1.as_encoded_bytes(), b"\0", &e.2].concat())
+		.collect();
+	let buf = buf.concat();
+	let size = buf.len();
 	let header = format!("tree {size}\0");
-	let contents = [header.as_bytes(), buf.buffer()].concat();
+	let contents = [header.as_bytes(), &buf].concat();
 	let sha1_digest = Sha1::digest(&contents);
 	let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
 	encoder.write_all(&contents).context("write contents to encoder buffer")?;
